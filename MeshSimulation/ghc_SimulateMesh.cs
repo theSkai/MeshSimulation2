@@ -48,7 +48,7 @@ namespace MeshSimulation
         /// </summary>
         protected override void RegisterOutputParams(GH_Component.GH_OutputParamManager pManager)
         {
-            pManager.AddGenericParameter("Output", "Output", "Output", GH_ParamAccess.item);
+            pManager.AddGenericParameter("Output", "Output", "Output", GH_ParamAccess.list);
             pManager.AddGenericParameter("DisplayMesh", "DisplayMesh", "DisplayMesh", GH_ParamAccess.list);
         }
 
@@ -60,16 +60,21 @@ namespace MeshSimulation
         /// 
 
         public Canvas canvas = new Canvas();
+        public Canvas lastCanvas1 = new Canvas();
+        public Canvas lastCanvas2 = new Canvas();
         bool isInitialized = false;
-        
+
+        List<GH_Mesh> displayMesh = new List<GH_Mesh>();
+        double SumGasAmount = 0;
+        List<string> output = new List<string>();
+
         protected override void SolveInstance(IGH_DataAccess DA)
         {
             bool reset = true;
             DA.GetData("Reset", ref reset);
             //List<List<int>> displayMesh = new List<List<int>>();
             //List<Color> displayMesh = new List<Color>();
-            List<GH_Mesh> displayMesh = new List<GH_Mesh>();
-            double SumGasAmount = 0;
+            
             if (reset)
             {
                 isInitialized = true;
@@ -92,7 +97,10 @@ namespace MeshSimulation
                 canvas.createEmptyMesh((int)width, (int)height, step);
                 canvas.initializeMesh(volumeMesh);
                 canvas.loadLiquidSource(liquidSource, liquidSourcePressure);
-                
+
+                lastCanvas1.createEmptyMesh((int)width, (int)height, step);
+                lastCanvas2.createEmptyMesh((int)width, (int)height, step);
+
                 SumGasAmount = canvas.SumGasAmount;
 
             }
@@ -101,15 +109,36 @@ namespace MeshSimulation
                 List<double> liquidSourcePressure = new List<double>();
                 DA.GetDataList("LiquidSourcePressureList", liquidSourcePressure);
 
-                canvas.updateLiquidSourcePressure(liquidSourcePressure);
-                canvas.readMesh();
-                canvas.updateFluidDistribution();
+                int updateTimes = 0;
 
-                SumGasAmount = canvas.SumGasAmount;
+                while(updateTimes < 100)
+                {
+                    canvas.updateLiquidSourcePressure(liquidSourcePressure);
+                    canvas.readMesh();
+                    canvas.updateFluidDistribution();
+                    SumGasAmount = canvas.SumGasAmount;
+
+                    if (updateTimes >= 2)
+                    {
+                        if (lastCanvas2.isSameCellMeshAs(canvas.CellMesh))
+                        {
+                            break;
+                        }
+                    }
+
+                    lastCanvas2.duplicateCellMeshFrom(lastCanvas1.CellMesh);
+                    lastCanvas1.duplicateCellMeshFrom(canvas.CellMesh);
+
+                    updateTimes++;
+                }
+                output.Clear();
+                output.Add("update times: " + updateTimes.ToString());
+                output.Add("gas amount: " + SumGasAmount.ToString());
+                DA.SetDataList("Output", output);
             }
             displayMesh = canvas.displayMeshColored();
             DA.SetDataList("DisplayMesh", displayMesh);
-            DA.SetData("Output", SumGasAmount);
+
         }
 
         /// <summary>

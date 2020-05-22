@@ -276,7 +276,7 @@ namespace MeshSimulation
                     foreach (Cell nc in neighbour)
                     {
                         if (nc.Phase > 0)
-                        {
+                        {//气液界面
                             Interface interf = new Interface(c, nc);
                             drop.InterfaceList.Add(interf);
                             if(BubbleList[nc.index].Pressure > pressure)
@@ -287,7 +287,7 @@ namespace MeshSimulation
                         }
                     }
                 }
-
+                //气液界面按照体积降序排列
                 int numberOfInterface = drop.InterfaceList.Count;
                 List<Interface> orderedInterfaceList = new List<Interface>();
                 List<bool> isOrdered = new List<bool>();
@@ -406,7 +406,7 @@ namespace MeshSimulation
                     }
                 }
                 else
-                {
+                {//前进后退相匹配着排序
                     int numberOfInterface = drop.InterfaceList.Count;
                     List<int> forwardInterfaceIndexList = new List<int>();
                     List<int> backwardInterfaceIndexList = new List<int>();
@@ -455,38 +455,45 @@ namespace MeshSimulation
                     }
                 }
             }
+            else if(gasVolume == 1 && liquidPressure >= gasAmount * 1.5)
+            {
+                action = 2;
+            }
 
             return action;
         }
 
         private void takeAction(Interface itf, int action)
         {
-            if(action == 1)
+            Cell gasCell = itf.GasCell;
+            Cell liquidCell = itf.LiquidCell;
+            if (action == 1)
             {
-                Cell gasCell = itf.GasCell;
                 List<Cell> neighbour = getNeighbour(gasCell);
                 List<Cell> gasNeighbour = new List<Cell>();
                 foreach(Cell nc in neighbour)
                 {
                     if (nc.Phase > 0) gasNeighbour.Add(nc);
                 }
-                double addtion = gasCell.Phase / gasNeighbour.Count;
-                foreach(Cell gnc in gasNeighbour)
+                if(gasNeighbour.Count > 0)
                 {
-                    gnc.Phase += addtion;
+                    double addtion = gasCell.Phase / gasNeighbour.Count;
+                    foreach (Cell gnc in gasNeighbour)
+                    {
+                        gnc.Phase += addtion;
+                    }
+                    gasCell.Phase = 0;//update phase
                 }
-                gasCell.Phase = 0;//update phase
+
             }
             else if(action == -1)
             {
-                Cell gasCell = itf.GasCell;
-                Cell liquidCell = itf.LiquidCell;
                 liquidCell.Phase += gasCell.Phase / 2;//update phase
                 gasCell.Phase -= gasCell.Phase / 2;
             }
-            else
+            else if(action == 2)
             {
-                return;
+                gasCell.Phase = 0;
             }
         }
 
@@ -500,6 +507,30 @@ namespace MeshSimulation
             if (currentX < Width - 1) neighbour.Add(CellMesh[currentX + 1][currentY]);
             if (currentY < Height - 1) neighbour.Add(CellMesh[currentX][currentY + 1]);
             return neighbour;
+        }
+
+        public void duplicateCellMeshFrom(List<List<Cell>> cm)
+        {
+            for(int i = 0; i < Width; i++)
+            {
+                for(int j = 0; j < Height; j++)
+                {
+                    CellMesh[i][j].Phase = cm[i][j].Phase;
+                }
+            }
+        }
+
+        public bool isSameCellMeshAs(List<List<Cell>> cm)
+        {
+            for (int i = 0; i < Width; i++)
+            {
+                for (int j = 0; j < Height; j++)
+                {
+                    if (CellMesh[i][j].Phase == 0 && cm[i][j].Phase > 0) return false;
+                    else if (CellMesh[i][j].Phase > 0 && cm[i][j].Phase == 0) return false;
+                }
+            }
+            return true;
         }
     }
 }
