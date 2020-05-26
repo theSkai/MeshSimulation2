@@ -56,13 +56,18 @@
     </Reference>
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="Bubble.cs" />
-    <Compile Include="Canvas.cs" />
-    <Compile Include="Drop.cs" />
+    <Compile Include="2D cellular automata\Bubble.cs" />
+    <Compile Include="3D cellular automata\Bubble3D.cs" />
+    <Compile Include="2D cellular automata\Canvas.cs" />
+    <Compile Include="3D cellular automata\Canvas3D.cs" />
+    <Compile Include="3D cellular automata\Cell3D.cs" />
+    <Compile Include="2D cellular automata\Drop.cs" />
+    <Compile Include="3D cellular automata\Drop3D.cs" />
     <Compile Include="ghc_DisplayMesh.cs" />
-    <Compile Include="ghc_SimulateMesh.cs" />
+    <Compile Include="2D cellular automata\ghc_SimulateMesh.cs" />
     <Compile Include="MeshSimulationInfo.cs" />
-    <Compile Include="Cell.cs" />
+    <Compile Include="2D cellular automata\Cell.cs" />
+    <Compile Include="3D cellular automata\ghc_SimulateMesh3D.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />

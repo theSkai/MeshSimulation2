@@ -113,9 +113,12 @@ namespace MeshSimulation
                     Point3d sc = sourcePoint[i];
                     int x = (int)(sc.X / Step);
                     int y = (int)(sc.Y / Step);
-                    if (CellMesh[x][y].Phase > 0) SumGasAmount--;
-                    Source source = new Source(CellMesh[x][y], sourcePressure[i]);
-                    SourceList.Add(source);
+                    if(x >= 0 && x < Width && y >= 0 && y <= Height)
+                    {
+                        if (CellMesh[x][y].Phase > 0) SumGasAmount--;
+                        Source source = new Source(CellMesh[x][y], sourcePressure[i]);
+                        SourceList.Add(source);
+                    }
                 }
             }
         }
