@@ -18,7 +18,7 @@ namespace MeshSimulation
         
         public List<Cell3D> Neighbour;
 
-        public Cell3D(int x, int y, int z, double volume = 0, int gasAmount = 0)
+        public Cell3D(int x, int y, int z, double volume = 0, double gasAmount = 0)
         {
             X_coor = x;
             Y_coor = y;

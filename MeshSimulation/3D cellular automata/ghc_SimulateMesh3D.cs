@@ -19,17 +19,9 @@ namespace MeshSimulation
         protected override void RegisterInputParams(GH_Component.GH_InputParamManager pManager)
         {
             pManager.AddBooleanParameter("Reset", "Reset", "Reset", GH_ParamAccess.item, true);
-
-            pManager.AddNumberParameter("X_extent", "X_extent", "X_extent", GH_ParamAccess.item, 0);
-            pManager.AddNumberParameter("Y_extent", "Y_extent", "Y_extent", GH_ParamAccess.item, 0);
-            pManager.AddNumberParameter("Z_extent", "Z_extent", "Z_extent", GH_ParamAccess.item, 0);
             pManager.AddNumberParameter("Step", "Step", "Step", GH_ParamAccess.item, 0);
 
-            pManager.AddNumberParameter("X_num", "X_num", "X_num", GH_ParamAccess.item);
-            pManager.AddNumberParameter("Y_num", "Y_num", "Y_num", GH_ParamAccess.item);
-            pManager.AddNumberParameter("Z_num", "Z_num", "Z_num", GH_ParamAccess.item);
-            pManager.AddNumberParameter("EdgeLength", "EdgeLength", "EdgeLength", GH_ParamAccess.item);
-
+            pManager.AddGenericParameter("VesselCellList", "VesselCellList", "VesselCellList", GH_ParamAccess.list);
             pManager.AddPointParameter("LiquidSourcePointList", "LiquidSourcePoint", "LiquidSourcePoint", GH_ParamAccess.list);
             pManager.AddNumberParameter("LiquidSourcePressureList", "LiquidSourcePressure", "LiquidSourcePressure", GH_ParamAccess.list);
         }
@@ -40,56 +32,41 @@ namespace MeshSimulation
             pManager.AddGenericParameter("DisplayMesh", "DisplayMesh", "DisplayMesh", GH_ParamAccess.list);
         }
 
+        bool isInitialized = false;
         public Canvas3D canvas = new Canvas3D();
         public Canvas3D canvas1 = new Canvas3D();
         public Canvas3D canvas2 = new Canvas3D();
-        bool isInitialized = false;
-
-        List<GH_Mesh> displayMesh = new List<GH_Mesh>();
-        double SumGasAmount = 0;
-        List<string> output = new List<string>();
 
         protected override void SolveInstance(IGH_DataAccess DA)
         {
-            bool reset = true;
-            DA.GetData("Reset", ref reset);
+            bool Reset = true;
+            double step = 0;
+            int Step = 0;
+            List<Cell3D> VesselCellList = new List<Cell3D>();//后续直接引用
+            List<Point3d> LiquidSource = new List<Point3d>();
+            List<double> LiquidSourcePressure = new List<double>();
 
-            if (reset)
+            List<GH_Mesh> displayMesh = new List<GH_Mesh>();
+            List<string> output = new List<string>();
+            double SumGasAmount = 0;
+
+            DA.GetData("Step", ref step);
+            DA.GetData("Reset", ref Reset);
+            DA.GetDataList("VesselCellList", VesselCellList);
+            DA.GetDataList("LiquidSourcePointList", LiquidSource);
+            DA.GetDataList("LiquidSourcePressureList", LiquidSourcePressure);
+
+            Step = (int)step;
+            if (step == 0) return;
+            if (Reset)
             {
                 isInitialized = true;
                 canvas = new Canvas3D();
-
-                double x_extent = 0;
-                double y_extent = 0;
-                double z_extent = 0;
-                double step = 0;
-
-                double x_num = 0;
-                double y_num = 0;
-                double z_num = 0;
-                double edgeLength = 0;
-
-                List<Point3d> liquidSource = new List<Point3d>();
-                List<double> liquidSourcePressure = new List<double>();
-
-                DA.GetData("X_extent", ref x_extent);
-                DA.GetData("Y_extent", ref y_extent);
-                DA.GetData("Z_extent", ref z_extent);
-                DA.GetData("Step", ref step);
-
-                DA.GetData("X_num", ref x_num);
-                DA.GetData("Y_num", ref y_num);
-                DA.GetData("Z_num", ref z_num);
-                DA.GetData("EdgeLength", ref edgeLength);
-
-                DA.GetDataList("LiquidSourcePointList", liquidSource);
-                DA.GetDataList("LiquidSourcePressureList", liquidSourcePressure);
-
-                canvas.CreateEmptyMesh((int)x_extent, (int)y_extent, (int)z_extent, step);
-                canvas.InitializeMesh((int)edgeLength, (int)x_num, (int)y_num, (int)z_num);
-                canvas.LoadLiquidSource(liquidSource, liquidSourcePressure);
-                canvas1.InitializeVenousCellListFrom(canvas.VenousCellList);
-                canvas2.InitializeVenousCellListFrom(canvas.VenousCellList);
+                canvas.Step = Step;
+                canvas.InitializeVesselCellListFrom(VesselCellList, false);
+                canvas.LoadLiquidSource(LiquidSource, LiquidSourcePressure);
+                canvas1.InitializeVesselCellListFrom(canvas.VesselCellList, true);
+                canvas2.InitializeVesselCellListFrom(canvas.VesselCellList, true);
 
                 SumGasAmount = canvas.SumGasAmount;
                 output.Clear();
@@ -98,27 +75,24 @@ namespace MeshSimulation
             
             else if (isInitialized)
             {
-                List<double> liquidSourcePressure = new List<double>();
-                DA.GetDataList("LiquidSourcePressureList", liquidSourcePressure);
-
                 int updateTimes = 0;
                 while (updateTimes < 100)
                 {
-                    canvas.UpdateLiquidSourcePressure(liquidSourcePressure);
+                    canvas.UpdateLiquidSourcePressure(LiquidSourcePressure);
                     canvas.ReadMesh();
                     canvas.UpdateFluidDistribution();
                     SumGasAmount = canvas.SumGasAmount;
 
                     if (updateTimes >= 2)
                     {
-                        if (canvas2.IsSameVenousCellListAs(canvas.VenousCellList))
+                        if (canvas2.IsSameVesselCellListAs(canvas.VesselCellList))
                         {
                             break;
                         }
                     }
 
-                    canvas2.DuplicateVenousCellListFrom(canvas1.VenousCellList);
-                    canvas1.DuplicateVenousCellListFrom(canvas.VenousCellList);
+                    canvas2.UpdateVesselCellListFrom(canvas1.VesselCellList);
+                    canvas1.UpdateVesselCellListFrom(canvas.VesselCellList);
 
                     updateTimes++;
                 }

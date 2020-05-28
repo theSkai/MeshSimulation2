@@ -33,10 +33,10 @@ namespace MeshSimulation
         public int Z_extent;
 
         public double Step;
-        public List<List<List<Cell3D>>> CellMesh;//x,y,z
+        //public List<List<List<Cell3D>>> CellMesh;//x,y,z
 
-        public List<Cell3D> VenousCellList;//x,y,z
-        public int VenousCellCount;
+        public List<Cell3D> VesselCellList;//x,y,z
+        public int VesselCellCount;
         public List<Source3D> SourceList;//liquid source
         public List<Bubble3D> BubbleList;
         public List<Drop3D> DropList;
@@ -50,10 +50,10 @@ namespace MeshSimulation
             Z_extent = 0;
             Step = 0;
 
-            CellMesh = new List<List<List<Cell3D>>>();
+            //CellMesh = new List<List<List<Cell3D>>>();
 
-            VenousCellList = new List<Cell3D>();
-            VenousCellCount = 0;
+            VesselCellList = new List<Cell3D>();
+            VesselCellCount = 0;
 
             SourceList = new List<Source3D>();
             BubbleList = new List<Bubble3D>();
@@ -61,110 +61,68 @@ namespace MeshSimulation
 
             SumGasAmount = 0;
         }
-
-        public void CreateEmptyMesh(int x_extent = 0, int y_extent = 0, int z_extent = 0, double step = 0)
-        {//初始化
-            X_extent = x_extent;
-            Y_extent = y_extent;
-            Z_extent = z_extent;
-
-            Step = step;
-
-            if (X_extent == 0 || Y_extent == 0 || Z_extent == 0 || Step == 0) return;
-
-            for (int i = 0; i < X_extent; i++)
-            {
-                List<List<Cell3D>> columnYZ = new List<List<Cell3D>>();
-                for (int j = 0; j < Y_extent; j++)
-                {
-                    List<Cell3D> columnZ = new List<Cell3D>();
-                    List<bool> columnOfIsDiscoveredZ = new List<bool>();
-                    for (int k = 0; k < Z_extent; k++)
-                    {
-                        Cell3D c = new Cell3D(i, j, k);
-                        columnZ.Add(c);
-                        columnOfIsDiscoveredZ.Add(false);
-                    }
-                    columnYZ.Add(columnZ);
-                }
-                CellMesh.Add(columnYZ);
-            }
-        }
-
-        public void InitializeMesh(int edgeLength, int x_Num, int y_Num, int z_Num)
+        public void InitializeVesselCellListFrom(List<Cell3D> cm, bool ifDubpicated)
         {
-            if (X_extent == 0 || Y_extent == 0 || Z_extent == 0 || Step == 0) return;
-            if (x_Num == 0 || y_Num == 0 || z_Num == 0 || edgeLength == 0) return;
-
-            double sumGasAmount = 0;
-            for (int i = 0; i < X_extent && i <= x_Num * edgeLength; i++)
+            if (ifDubpicated)
             {
-                for (int j = 0; j < Y_extent && j <= y_Num * edgeLength; j++)
+                VesselCellCount = cm.Count;
+                VesselCellList.Clear();
+                for (int i = 0; i < VesselCellCount; i++)
                 {
-                    for (int k = 0; k < Z_extent && k <= z_Num * edgeLength; k++)
-                    {
-                        if((i % edgeLength == 0 && j % edgeLength == 0) || 
-                           (i % edgeLength == 0 && k % edgeLength == 0) ||
-                           (j % edgeLength == 0 && k % edgeLength == 0))
-                        {
-                            //定义空腔
-                            CellMesh[i][j][k].Volume = 1;
-                            CellMesh[i][j][k].Phase = 1;
-                            sumGasAmount += 1;
-
-                            //计算邻域
-                            if (i % edgeLength == 0 && j % edgeLength == 0 && k % edgeLength == 0)
-                            {//顶点
-                                if (i + 1 < X_extent) CellMesh[i][j][k].Neighbour.Add(CellMesh[i + 1][j][k]);
-                                if (i - 1 >= 0) CellMesh[i][j][k].Neighbour.Add(CellMesh[i - 1][j][k]);
-                                if (j + 1 < Y_extent) CellMesh[i][j][k].Neighbour.Add(CellMesh[i][j + 1][k]);
-                                if (j - 1 >= 0) CellMesh[i][j][k].Neighbour.Add(CellMesh[i][j - 1][k]);
-                                if (k + 1 < Z_extent) CellMesh[i][j][k].Neighbour.Add(CellMesh[i][j][k + 1]);
-                                if (k - 1 >= 0) CellMesh[i][j][k].Neighbour.Add(CellMesh[i][j][k - 1]);
-                            }
-                            else if(i % edgeLength != 0)
-                            {
-                                if (i + 1 < X_extent) CellMesh[i][j][k].Neighbour.Add(CellMesh[i + 1][j][k]);
-                                if (i - 1 >= 0) CellMesh[i][j][k].Neighbour.Add(CellMesh[i - 1][j][k]);
-                            }
-                            else if (j % edgeLength != 0)
-                            {
-                                if (j + 1 < Y_extent) CellMesh[i][j][k].Neighbour.Add(CellMesh[i][j + 1][k]);
-                                if (j - 1 >= 0) CellMesh[i][j][k].Neighbour.Add(CellMesh[i][j - 1][k]);
-                            }
-                            else if (k % edgeLength != 0)
-                            {
-                                if (k + 1 < Z_extent) CellMesh[i][j][k].Neighbour.Add(CellMesh[i][j][k + 1]);
-                                if (k - 1 >= 0) CellMesh[i][j][k].Neighbour.Add(CellMesh[i][j][k - 1]);
-                            }
-
-                            VenousCellList.Add(CellMesh[i][j][k]);//按照坐标序加入
-                        }
-                    }
+                    VesselCellList.Add(new Cell3D(0, 0, 0));
                 }
             }
-            SumGasAmount = sumGasAmount;
-            VenousCellCount = VenousCellList.Count;
+            else
+            {
+                VesselCellCount = cm.Count;
+                VesselCellList = cm;//引用
+                SumGasAmount = 0;
+                for (int i = 0; i < VesselCellCount; i++)
+                {
+                    cm[i].Phase = 1;//初始态，不支持放置初始液体
+                    SumGasAmount += cm[i].Volume;
+                }
+            }
         }
 
+        public void UpdateVesselCellListFrom(List<Cell3D> cm)
+        {
+            for (int i = 0; i < VesselCellCount; i++)
+            {
+                VesselCellList[i].Phase = cm[i].Phase;
+            }
+        }
+
+        public bool IsSameVesselCellListAs(List<Cell3D> cm)
+        {
+            for (int i = 0; i < VesselCellCount; i++)
+            {
+                if (VesselCellList[i].Phase == 0 && cm[i].Phase > 0) return false;
+                else if (VesselCellList[i].Phase > 0 && cm[i].Phase == 0) return false;
+            }
+            return true;
+        }
         public void LoadLiquidSource(List<Point3d> sourcePoint, List<double> sourcePressure)
         {
+            if (sourcePoint.Count != sourcePressure.Count) return;
+
             SourceList.Clear();
-            if (sourcePoint.Count == sourcePressure.Count)
+            int n = sourcePoint.Count;
+            for (int j = 0; j < VesselCellCount; j++)
             {
-                int n = sourcePoint.Count;
                 for (int i = 0; i < n; i++)
                 {
                     Point3d sc = sourcePoint[i];
                     int x = (int)(sc.X / Step);
                     int y = (int)(sc.Y / Step);
                     int z = (int)(sc.Z / Step);
-                    if (x >= 0 && x < X_extent && 
-                        y >= 0 && y < Y_extent &&
-                        z >= 0 && z < Z_extent)
+
+                    if(x == VesselCellList[j].X_coor &&
+                       y == VesselCellList[j].Y_coor &&
+                       z == VesselCellList[j].Z_coor)
                     {
-                        if (CellMesh[x][y][z].Phase > 0) SumGasAmount -= 1;
-                        SourceList.Add(new Source3D(CellMesh[x][y][z], sourcePressure[i]));
+                        if (VesselCellList[j].Phase > 0) SumGasAmount -= 1;
+                        SourceList.Add(new Source3D(VesselCellList[j], sourcePressure[i]));
                     }
                 }
             }
@@ -184,15 +142,15 @@ namespace MeshSimulation
         
         public List<GH_Mesh> DisplayMeshColored()
         {
-            List<GH_Mesh> display = new List<GH_Mesh>();
+            List<GH_Mesh> Display = new List<GH_Mesh>();
             Point3d min = new Point3d(0, 0, 0);
             Point3d max = new Point3d(1, 1, 1);
             BoundingBox box = new BoundingBox(min, max);
             Mesh baseMesh = Mesh.CreateFromBox(box, 1, 1, 1);
 
-            for (int i = 0; i < VenousCellCount; i++)
+            for (int i = 0; i < VesselCellCount; i++)
             {
-                Cell3D currentCell = VenousCellList[i];
+                Cell3D currentCell = VesselCellList[i];
 
                 Mesh newMesh = baseMesh.DuplicateMesh();
                 newMesh.Translate(currentCell.X_coor * Step, currentCell.Y_coor * Step, currentCell.Z_coor * Step);
@@ -200,17 +158,17 @@ namespace MeshSimulation
                 if (currentCell.Phase > 0) newMesh.VertexColors.CreateMonotoneMesh(Color.FromArgb(40, 255, 255, 255));
                 else newMesh.VertexColors.CreateMonotoneMesh(Color.FromArgb(100, 0, 0, 255));
 
-                display.Add(new GH_Mesh(newMesh));
+                Display.Add(new GH_Mesh(newMesh));
             }
-            return display;
+            return Display;
         }
 
         
         public void ReadMesh()
         {
-            for(int i = 0; i < VenousCellCount; i++)
+            for(int i = 0; i < VesselCellCount; i++)
             {
-                VenousCellList[i].IsChecked = false;
+                VesselCellList[i].IsChecked = false;
             }
             BubbleList.Clear();
             DropList.Clear();
@@ -222,9 +180,9 @@ namespace MeshSimulation
                 DropList.Add(new Drop3D(cellGroup, source.SourcePressure));
             }
 
-            for(int i = 0; i < VenousCellCount; i++)
+            for(int i = 0; i < VesselCellCount; i++)
             {
-                Cell3D currentCell = VenousCellList[i];
+                Cell3D currentCell = VesselCellList[i];
                 if (currentCell.IsChecked == false)
                 {
                     List<Cell3D> cellGroup = SearchGroup(ref currentCell);
@@ -237,7 +195,6 @@ namespace MeshSimulation
                         DropList.Add(new Drop3D(cellGroup));
                     }
                 }
-
             }
 
             SumGasAmount = AnalyzeBubles();
@@ -480,34 +437,7 @@ namespace MeshSimulation
             }
         }
 
-        public void InitializeVenousCellListFrom(List<Cell3D> cm)
-        {
-            VenousCellCount = cm.Count;
-            for (int i = 0; i < VenousCellCount; i++)
-            {
-                Cell3D c = new Cell3D(0, 0, 0);
-                c.Phase = cm[i].Phase;
-                VenousCellList.Add(c);
-            }
-        }
 
-        public void DuplicateVenousCellListFrom(List<Cell3D> cm)
-        {
-            for (int i = 0; i < VenousCellCount; i++)
-            {
-                VenousCellList[i].Phase = cm[i].Phase;
-            }
-        }
-
-        public bool IsSameVenousCellListAs(List<Cell3D> cm)
-        {
-            for (int i = 0; i < VenousCellCount; i++)
-            {
-                if (VenousCellList[i].Phase == 0 && cm[i].Phase > 0) return false;
-                else if (VenousCellList[i].Phase > 0 && cm[i].Phase == 0) return false;
-            }
-            return true;
-        }
         
     }
 }

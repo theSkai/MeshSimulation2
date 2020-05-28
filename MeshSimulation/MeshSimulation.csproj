@@ -63,8 +63,9 @@
     <Compile Include="3D cellular automata\Cell3D.cs" />
     <Compile Include="2D cellular automata\Drop.cs" />
     <Compile Include="3D cellular automata\Drop3D.cs" />
-    <Compile Include="ghc_DisplayMesh.cs" />
     <Compile Include="2D cellular automata\ghc_SimulateMesh.cs" />
+    <Compile Include="3D cellular automata\ghc_2DImageMesh.cs" />
+    <Compile Include="3D cellular automata\ghc_CubeLattice.cs" />
     <Compile Include="MeshSimulationInfo.cs" />
     <Compile Include="2D cellular automata\Cell.cs" />
     <Compile Include="3D cellular automata\ghc_SimulateMesh3D.cs" />
